@@ -1,0 +1,8 @@
+ImgurRandomBot
+Author: Guillermo Gómez Fonfría
+Email: <guillermo.gf@openmailbox.org>
+
+ImgurRandomBot downloads a picture from imgur.com and then sends it to that
+chat.
+
+Thanks to Telegram for the bot API
