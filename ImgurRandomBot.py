@@ -100,6 +100,12 @@ while True:
         last_update_file.write(str(item["update_id"]))
         last_update_file.close()
 
+        # Group's status messages don't include "text" key
+        try:
+            tmp = item["message"]["text"]
+        except KeyError:
+            continue
+
         if "/start" == item["message"]["text"]:
             message = requests.get(sendmessage_url + "?chat_id=" +
                                    str(item["message"]["chat"]["id"]) +
