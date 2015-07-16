@@ -118,6 +118,10 @@ while True:
                 files = {"photo": (path, open(path, "rb"))}
                 requests.post(sendimage_url, data=data, files=files)
             os.remove(path)
+        elif item["message"]["chat"]["id"] < 0:
+            # If it is none of the above and it's a group, let's guess it was for
+            # another bot rather than sending the unknown command message
+            continue
         else:
             message = requests.get(sendmessage_url + "?chat_id=" +
                                    str(item["message"]["chat"]["id"]) +
