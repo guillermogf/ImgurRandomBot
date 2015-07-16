@@ -40,6 +40,7 @@ token_url = api_url + token
 getupdates_url = token_url + "/getUpdates"
 sendmessage_url = token_url + "/sendMessage"
 sendimage_url = token_url + "/sendPhoto"
+senddocument_url = token_url + "/sendDocument"
 
 # Messages content
 start_text = "Hi!\nThis bot downloads a random picture from imgur.com and \
@@ -110,8 +111,12 @@ while True:
         elif "/random" in item["message"]["text"]:
             path = download_image()
             data = {"chat_id": str(item["message"]["chat"]["id"])}
-            files = {"photo": (path, open(path, "rb"))}
-            requests.post(sendimage_url, data=data, files=files)
+            if path.endswith(".gif"):
+                files = {"document": (path, open(path, "rb"))}
+                requests.post(senddocument_url, data=data, files=files)
+            else:
+                files = {"photo": (path, open(path, "rb"))}
+                requests.post(sendimage_url, data=data, files=files)
             os.remove(path)
         else:
             message = requests.get(sendmessage_url + "?chat_id=" +
