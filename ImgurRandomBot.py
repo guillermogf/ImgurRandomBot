@@ -19,6 +19,7 @@
 
 import urllib2
 import sys
+import os
 import json
 import requests
 
@@ -111,6 +112,7 @@ while True:
             data = {"chat_id": str(item["message"]["chat"]["id"])}
             files = {"photo": (path, open(path, "rb"))}
             requests.post(sendimage_url, data=data, files=files)
+            os.remove(path)
         else:
             message = requests.get(sendmessage_url + "?chat_id=" +
                                    str(item["message"]["chat"]["id"]) +
