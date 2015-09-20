@@ -22,17 +22,17 @@ import sys
 import os
 import json
 import requests
+import time
 
 
 # Load Token
 try:
-    token_file = open("token")
+    with open("token") as token_file:
+        token = token_file.read().rstrip("\n")
 except:
     print("Token file missing")
     sys.exit(1)
 
-token = token_file.read().rstrip("\n")
-token_file.close()
 
 # Telegram API urls
 api_url = "https://api.telegram.org/bot"
@@ -47,7 +47,10 @@ start_text = "Hi!\nThis bot downloads a random picture from imgur.com and \
 sends it to you.\n"
 
 help_text = "List of available commands:\n/help Shows this list of available \
-commands\n/random Sends random picture"
+commands\n/random Sends random picture\n/about Shows info about this bot\n\
+/feedback <message> Send your feedback to the ImgurRandomBot developers"
+
+about_text = "Source code at: https://github.com/guillermogf/BechdelBot"
 
 error_unknown = "Unknown command\n"
 
@@ -67,23 +70,39 @@ def download_image():
 
     path = "/tmp/" + name
 
-    image = open(path, "w")
-    image.write(urllib2.urlopen("http://i.imgur.com/{0}".format(name)).read())
-    image.close()
+    with open(path, "w") as image:
+        image.write(urllib2.urlopen("http://i.imgur.com/{0}".format(name)).read())
 
     return path
+
+
+def get_argument(message):
+    message = message.split(" ")
+    if "/feedback" in message:
+        message.remove("/feedback")
+    elif "/feedback@ImgurRandomBot" in message:
+        message.remove("/feedback@ImgurRangomBot")
+
+    argument = " ".join(message)
+    return argument
+
+
+def feedback(message):
+    with open("feedback", "a") as feedback_file:
+        feedback = " ".join(message) + "\n"
+        feedback_file.write(feedback.encode("utf-8"))
+
 
 while True:
     # Load last update
     try:
-        last_update_file = open("lastupdate")
-        last_update = last_update_file.read().rstrip("\n")
-        last_update_file.close()
+        with open("lastupdate") as last_update_file:
+            last_update = last_update_file.read().rstrip("\n")
     except:
         last_update = "0"  # If lastupdate file not present, read all updates
 
-    getupdates_offset_url = getupdates_url + "?offset=" + str(int(last_update)
-                                                              + 1)
+    getupdates_offset_url = getupdates_url + "?offset=" + \
+        str(int(last_update) + 1)
 
     get_updates = requests.get(getupdates_offset_url)
     if get_updates.status_code != 200:
@@ -96,25 +115,30 @@ while True:
         if int(last_update) >= item["update_id"]:
             continue
         # Store last update
-        last_update_file = open("lastupdate", "w")
-        last_update_file.write(str(item["update_id"]))
-        last_update_file.close()
+        with open("lastupdate", "w") as last_update_file:
+            last_update_file.write(str(item["update_id"]))
+
+        # Store time to log
+        with open("log", "a") as log:
+            log.write(str(time.time()) + "\n")
 
         # Group's status messages don't include "text" key
         try:
-            tmp = item["message"]["text"]
+            text = item["message"]["text"]
         except KeyError:
             continue
 
-        if "/start" == item["message"]["text"]:
+        if "/start" == text:
             message = requests.get(sendmessage_url + "?chat_id=" +
                                    str(item["message"]["chat"]["id"]) +
                                    "&text=" + start_text + help_text)
-        elif "/help" in item["message"]["text"]:
+
+        elif "/help" in text:
             message = requests.get(sendmessage_url + "?chat_id=" +
                                    str(item["message"]["chat"]["id"]) +
                                    "&text=" + help_text)
-        elif "/random" in item["message"]["text"]:
+
+        elif "/random" in text:
             path = download_image()
             data = {"chat_id": str(item["message"]["chat"]["id"])}
             if path.endswith(".gif"):
@@ -124,10 +148,29 @@ while True:
                 files = {"photo": (path, open(path, "rb"))}
                 requests.post(sendimage_url, data=data, files=files)
             os.remove(path)
+
+        elif "/feedback" in text:
+            if get_argument(text) != "":
+                feedback([time.ctime(item["message"]["date"]),
+                          "id:" + str(item["message"]["chat"]["id"]),
+                          item["message"]["from"]["first_name"], text])
+                answer = "Thanks for your feedback!"
+            else:
+                answer = "Write your message after /feedback"
+            message = requests.get(sendmessage_url + "?chat_id=" +
+                                   str(item["message"]["chat"]["id"]) +
+                                   "&text=" + answer)
+
+        elif "/about" in text:
+            message = requests.get(sendmessage_url + "?chat_id=" +
+                                   str(item["message"]["chat"]["id"]) +
+                                   "&text=" + about_text)
+
         elif item["message"]["chat"]["id"] < 0:
-            # If it is none of the above and it's a group, let's guess it was for
-            # another bot rather than sending the unknown command message
+            # If it is none of the above and it's a group, let's guess it was
+            # for another bot rather than sending the unknown command message
             continue
+
         else:
             message = requests.get(sendmessage_url + "?chat_id=" +
                                    str(item["message"]["chat"]["id"]) +
