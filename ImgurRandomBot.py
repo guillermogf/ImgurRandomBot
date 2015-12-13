@@ -50,7 +50,7 @@ help_text = "List of available commands:\n/help Shows this list of available \
 commands\n/random Sends random picture\n/about Shows info about this bot\n\
 /feedback <message> Send your feedback to the ImgurRandomBot developers"
 
-about_text = "Source code at: https://github.com/guillermogf/BechdelBot"
+about_text = "Source code at: https://github.com/guillermogf/ImgurRandomBot"
 
 error_unknown = "Unknown command\n"
 
